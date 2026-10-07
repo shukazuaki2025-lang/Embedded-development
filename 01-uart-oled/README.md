@@ -34,9 +34,13 @@ OLED 接到 Nucleo 的 Arduino 排针上（排针上印有 D14、D15、3V3、GND
 
 串口不用额外接线：板载 ST-LINK 的虚拟串口（VCP）内部接在 LPUART1（PA2 TX / PA3 RX），USB 一插电脑就能看到一个串口。
 
+## 最快的烧录方法：拖拽（不用装任何软件）
+
+`firmware/uart_oled_nucleo_g474re.bin` 是已经编译好的程序。Nucleo 插上电脑后，“此电脑”里会出现一个叫 **NOD_G474RE** 的 U 盘，把这个 `.bin` 文件拖进去，ST-LINK 指示灯闪几下就烧录好了，U 盘会自动重新出现。
+
 ## 编译和烧录
 
-推荐用 [PlatformIO](https://platformio.org/)（VS Code 插件或命令行）：
+改了代码以后需要自己编译，推荐用 [PlatformIO](https://platformio.org/)（VS Code 插件或命令行）：
 
 ```bash
 cd 01-uart-oled
@@ -128,5 +132,6 @@ OLED 字库只有英文，发中文会显示成 `?`。
 01-uart-oled/
 ├── platformio.ini        PlatformIO 工程配置
 ├── src/main.cpp          板子程序
+├── firmware/             编译好的 .bin，可直接拖进 NOD_G474RE 盘
 └── tools/serial_test.py  电脑端串口自动测试脚本
 ```

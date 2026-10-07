@@ -28,16 +28,16 @@ static const uint8_t  BUTTON_PIN    = USER_BTN;     // B1 蓝色按键 (PC13)
 U8G2_SSD1306_128X64_NONAME_F_HW_I2C u8g2(U8G2_R0, U8X8_PIN_NONE);
 
 // ---------------- 状态 ----------------
-static const size_t LINE_MAX    = 64;   // 单行最大长度
+static const size_t RX_LINE_MAX    = 64;   // 单行最大长度
 static const size_t HISTORY_LEN = 3;    // OLED 上显示的历史条数
 static const size_t SHOW_CHARS  = 21;   // 6x10 字体，128 像素一行最多 21 个字符
 
 enum LedMode { LED_BLINK, LED_ON, LED_OFF };
 
-static char     rxLine[LINE_MAX + 1];
+static char     rxLine[RX_LINE_MAX + 1];
 static size_t   rxLen = 0;
 static bool     rxOverflow = false;
-static char     history[HISTORY_LEN][LINE_MAX + 1];
+static char     history[HISTORY_LEN][RX_LINE_MAX + 1];
 static uint32_t rxCount = 0;   // 收到的行数
 static uint32_t txCount = 0;   // 发出的行数
 static bool     oledOk = false;
@@ -56,8 +56,8 @@ static void pushHistory(const char *s) {
   for (size_t i = HISTORY_LEN - 1; i > 0; i--) {
     strcpy(history[i], history[i - 1]);
   }
-  strncpy(history[0], s, LINE_MAX);
-  history[0][LINE_MAX] = '\0';
+  strncpy(history[0], s, RX_LINE_MAX);
+  history[0][RX_LINE_MAX] = '\0';
   oledDirty = true;
 }
 
@@ -179,7 +179,7 @@ static void handleLine(char *line) {
     txCount = 0;
     sendLine("OK cleared");
   } else {
-    char buf[LINE_MAX + 8];
+    char buf[RX_LINE_MAX + 8];
     snprintf(buf, sizeof(buf), "ECHO: %s", line);
     sendLine(buf);
   }
@@ -199,7 +199,7 @@ static void pollSerial() {
       }
       rxLen = 0;
       rxOverflow = false;
-    } else if (rxLen < LINE_MAX) {
+    } else if (rxLen < RX_LINE_MAX) {
       rxLine[rxLen++] = c;
     } else {
       rxOverflow = true;

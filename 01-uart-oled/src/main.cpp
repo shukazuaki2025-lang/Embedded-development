@@ -6,7 +6,7 @@
  * 功能：
  *   - 通过板载 ST-LINK 虚拟串口 (USB 线) 与电脑通信，115200 8N1
  *   - 电脑发来的每一行文字都会回显 (ECHO) 并显示在 OLED 上
- *   - 支持几条简单命令：ping / info / led on / led off / led blink / clear / help
+ *   - 支持几条简单命令：ping / info / led on|off|blink|fast|slow / led blink <ms> / clear / help
  *   - OLED 显示：收发计数、运行时间、最近收到的 3 条消息
  *   - 按下板载蓝色按键 B1，板子会主动向电脑发送一条消息
  *
@@ -43,6 +43,7 @@ static uint32_t txCount = 0;   // 发出的行数
 static bool     oledOk = false;
 static bool     oledDirty = true;
 static LedMode  ledMode = LED_BLINK;
+static uint32_t ledHalfMs = 100;   // 闪烁半周期：亮 100 ms + 灭 100 ms = 5 Hz
 static int      buttonIdle;    // 上电时按键的电平，视为“未按下”
 static int      buttonLast;
 
@@ -117,7 +118,12 @@ static void drawOled() {
     u8g2.drawStr(0, 35, "waiting for PC...");
   }
 
-  u8g2.drawStr(0, 63, ledMode == LED_ON ? "LED:on" : ledMode == LED_OFF ? "LED:off" : "LED:blink");
+  if (ledMode == LED_BLINK) {
+    snprintf(buf, sizeof(buf), "LED:blink %lums", (unsigned long)ledHalfMs);
+    u8g2.drawStr(0, 63, buf);
+  } else {
+    u8g2.drawStr(0, 63, ledMode == LED_ON ? "LED:on" : "LED:off");
+  }
   u8g2.sendBuffer();
   oledDirty = false;
 }
@@ -140,7 +146,16 @@ static void printInfo() {
 
 static void printHelp() {
   sendLine("commands: ping | info | led on | led off | led blink | clear | help");
+  sendLine("          led fast | led slow | led blink <ms>  (blink half-period 20-2000 ms)");
   sendLine("anything else is echoed back and shown on the OLED");
+}
+
+static void setBlink(uint32_t halfMs) {
+  char buf[40];
+  ledMode = LED_BLINK;
+  ledHalfMs = halfMs;
+  snprintf(buf, sizeof(buf), "OK led blink %lums", (unsigned long)halfMs);
+  sendLine(buf);
 }
 
 static void handleLine(char *line) {
@@ -171,8 +186,19 @@ static void handleLine(char *line) {
     ledMode = LED_OFF;
     sendLine("OK led off");
   } else if (strcmp(line, "led blink") == 0) {
-    ledMode = LED_BLINK;
-    sendLine("OK led blink");
+    setBlink(ledHalfMs);
+  } else if (strcmp(line, "led fast") == 0) {
+    setBlink(50);
+  } else if (strcmp(line, "led slow") == 0) {
+    setBlink(500);
+  } else if (strncmp(line, "led blink ", 10) == 0) {
+    char *end;
+    long ms = strtol(line + 10, &end, 10);
+    if (*end != '\0' || ms < 20 || ms > 2000) {
+      sendLine("ERR usage: led blink <20-2000 ms>");
+    } else {
+      setBlink((uint32_t)ms);
+    }
   } else if (strcmp(line, "clear") == 0) {
     for (size_t i = 0; i < HISTORY_LEN; i++) history[i][0] = '\0';
     rxCount = 0;
@@ -225,7 +251,7 @@ static void updateLed() {
     case LED_ON:  digitalWrite(LED_PIN, HIGH); break;
     case LED_OFF: digitalWrite(LED_PIN, LOW);  break;
     case LED_BLINK:
-      digitalWrite(LED_PIN, (millis() / 500) % 2 ? HIGH : LOW);
+      digitalWrite(LED_PIN, (millis() / ledHalfMs) % 2 ? HIGH : LOW);
       break;
   }
 }

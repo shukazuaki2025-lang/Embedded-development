@@ -77,7 +77,9 @@ pio device monitor     # 打开串口监视器，115200
 | --- | --- |
 | `ping` | `pong` |
 | `info` | 板子型号、主频、运行时间、收发计数、OLED 状态 |
-| `led on` / `led off` / `led blink` | 控制绿色 LED（LD2） |
+| `led on` / `led off` / `led blink` | 控制绿色 LED（LD2），上电默认 5 Hz 闪烁（亮 100 ms + 灭 100 ms） |
+| `led fast` / `led slow` | 快闪 10 Hz（50 ms）/ 慢闪 1 Hz（500 ms） |
+| `led blink 200` | 自定义闪烁半周期，单位 ms，范围 20–2000 |
 | `clear` | 清空 OLED 上的消息和计数 |
 | `help` | 列出命令 |
 | 其他任何文字 | `ECHO: <你发的文字>` |
@@ -104,7 +106,7 @@ python tools/serial_test.py COM5 --chat     # 测完进入手动聊天模式
 │>hello                  │  最新收到的消息
 │ ping                   │
 │ info                   │
-│LED:blink               │  LED 状态
+│LED:blink 100ms         │  LED 状态和闪烁半周期
 └────────────────────────┘
 ```
 

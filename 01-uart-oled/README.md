@@ -126,7 +126,8 @@ OLED 字库只有英文，发中文会显示成 `?`。
 ## 换屏 / 换板子
 
 - **1.3 寸 SH1106**：把 `src/main.cpp` 里的 `U8G2_SSD1306_128X64_NONAME_F_HW_I2C` 换成 `U8G2_SH1106_128X64_NONAME_F_HW_I2C`。
-- **别的板子**（Blue Pill、ESP32 等）：改 `platformio.ini` 里的 `board`，并按新板子的 I2C 引脚接线；代码本身不依赖 G474 专有功能。
+- **别的 STM32 板子**（Blue Pill、其他 Nucleo 等）：改 `platformio.ini` 里的 `board`，并按新板子的 I2C 引脚接线；如果板子没有 `USER_BTN`（比如 Blue Pill），把 `BUTTON_PIN` 改成你接按键的引脚。
+- **ESP32 等非 STM32 芯片**：除了 `board`，还要把 `platform = ststm32` 改成对应平台（ESP32 是 `espressif32`），删掉 `upload_protocol` / `debug_tool` 两行，并把 `LED_PIN`、`BUTTON_PIN` 改成那块板子的引脚号；串口和 OLED 代码不用改。
 
 ## 文件
 

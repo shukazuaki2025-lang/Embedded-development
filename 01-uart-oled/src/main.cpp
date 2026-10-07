@@ -90,6 +90,12 @@ static void scanI2C() {
 }
 
 // ---------------- OLED ----------------
+// 6x10 字体每行占 9 像素（基线上 7 行、下 1 行）。分隔线下方还剩 40 像素，
+// 正好放 4 行、行距 10，相邻两行之间空 1 像素，不会重叠也不会超出屏幕底部
+static const uint8_t ROW_H      = 10;
+static const uint8_t HISTORY_Y0 = 31;   // 3 条历史的基线：31 / 41 / 51
+static const uint8_t LED_ROW_Y  = 61;   // 最底行
+
 static void drawOled() {
   if (!oledOk) return;
   char buf[32];
@@ -112,17 +118,17 @@ static void drawOled() {
     char shown[SHOW_CHARS + 1];
     // 第一条加 ">" 表示最新
     snprintf(shown, sizeof(shown), "%c%s", i == 0 ? '>' : ' ', history[i]);
-    u8g2.drawStr(0, 35 + i * 10, shown);
+    u8g2.drawStr(0, HISTORY_Y0 + i * ROW_H, shown);
   }
-  if (rxCount == 0) {
-    u8g2.drawStr(0, 35, "waiting for PC...");
+  if (history[0][0] == '\0') {
+    u8g2.drawStr(0, HISTORY_Y0, "waiting for PC...");
   }
 
   if (ledMode == LED_BLINK) {
     snprintf(buf, sizeof(buf), "LED:blink %lums", (unsigned long)ledHalfMs);
-    u8g2.drawStr(0, 63, buf);
+    u8g2.drawStr(0, LED_ROW_Y, buf);
   } else {
-    u8g2.drawStr(0, 63, ledMode == LED_ON ? "LED:on" : "LED:off");
+    u8g2.drawStr(0, LED_ROW_Y, ledMode == LED_ON ? "LED:on" : "LED:off");
   }
   u8g2.sendBuffer();
   oledDirty = false;

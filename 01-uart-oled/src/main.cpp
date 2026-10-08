@@ -7,7 +7,7 @@
  *   - 通过板载 ST-LINK 虚拟串口 (USB 线) 与电脑通信，115200 8N1
  *   - 电脑发来的每一行文字都会回显 (ECHO) 并显示在 OLED 上
  *   - 支持几条简单命令：ping / info / led on|off|blink|fast|slow / led blink <ms> / clear / help
- *   - OLED 显示：收发计数、运行时间、最近收到的 3 条消息
+ *   - OLED 显示：收发计数、运行时间、最近收到的 3 条消息，右下角方块与绿灯 LD2 同步亮灭
  *   - 按下板载蓝色按键 B1，板子会主动向电脑发送一条消息
  *
  * 接线 (OLED -> Nucleo Arduino 排针)：
@@ -44,6 +44,7 @@ static bool     oledOk = false;
 static bool     oledDirty = true;
 static LedMode  ledMode = LED_BLINK;
 static uint32_t ledHalfMs = 100;   // 闪烁半周期：亮 100 ms + 灭 100 ms = 5 Hz
+static bool     ledLit = false;    // LD2 当前是否点亮，OLED 右下角的方块跟着它变
 static int      buttonIdle;    // 上电时按键的电平，视为“未按下”
 static int      buttonLast;
 
@@ -95,6 +96,21 @@ static void scanI2C() {
 static const uint8_t ROW_H      = 10;
 static const uint8_t HISTORY_Y0 = 31;   // 3 条历史的基线：31 / 41 / 51
 static const uint8_t LED_ROW_Y  = 61;   // 最底行
+// 右下角 LED 指示方块正好占一个 8x8 tile（第 15 列、第 7 行），可以只刷新这一小块
+static const uint8_t IND_TILE_X = 15;
+static const uint8_t IND_TILE_Y = 7;
+
+static void drawLedIndicator() {
+  const uint8_t x = IND_TILE_X * 8, y = IND_TILE_Y * 8;
+  u8g2.setDrawColor(0);
+  u8g2.drawBox(x, y, 8, 8);
+  u8g2.setDrawColor(1);
+  if (ledLit) {
+    u8g2.drawBox(x + 1, y, 7, 7);    // 灯亮：实心
+  } else {
+    u8g2.drawFrame(x + 1, y, 7, 7);  // 灯灭：空心
+  }
+}
 
 static void drawOled() {
   if (!oledOk) return;
@@ -130,6 +146,7 @@ static void drawOled() {
   } else {
     u8g2.drawStr(0, LED_ROW_Y, ledMode == LED_ON ? "LED:on" : "LED:off");
   }
+  drawLedIndicator();
   u8g2.sendBuffer();
   oledDirty = false;
 }
@@ -253,12 +270,19 @@ static void pollButton() {
 }
 
 static void updateLed() {
+  bool lit;
   switch (ledMode) {
-    case LED_ON:  digitalWrite(LED_PIN, HIGH); break;
-    case LED_OFF: digitalWrite(LED_PIN, LOW);  break;
-    case LED_BLINK:
-      digitalWrite(LED_PIN, (millis() / ledHalfMs) % 2 ? HIGH : LOW);
-      break;
+    case LED_ON:  lit = true;  break;
+    case LED_OFF: lit = false; break;
+    default:      lit = (millis() / ledHalfMs) % 2; break;
+  }
+  if (lit == ledLit) return;
+  ledLit = lit;
+  digitalWrite(LED_PIN, lit ? HIGH : LOW);
+  // 只把右下角这一个 tile（8 字节）发给 OLED，闪得再快也跟得上
+  if (oledOk) {
+    drawLedIndicator();
+    u8g2.updateDisplayArea(IND_TILE_X, IND_TILE_Y, 1, 1);
   }
 }
 
@@ -279,6 +303,7 @@ void setup() {
   oledOk = i2cDevicePresent(OLED_I2C_ADDR);
   if (oledOk) {
     u8g2.setI2CAddress(OLED_I2C_ADDR << 1);  // U8g2 使用 8 位地址
+    u8g2.setBusClock(400000);  // I2C 快速模式，整屏刷新约 25 ms
     u8g2.begin();
     sendLine("OLED ok");
   } else {

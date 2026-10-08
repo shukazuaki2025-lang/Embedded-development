@@ -106,7 +106,7 @@ python tools/serial_test.py COM5 --chat     # 测完进入手动聊天模式
 │>hello                  │  最新收到的消息
 │ ping                   │
 │ info                   │
-│LED:blink 100ms         │  LED 状态和闪烁半周期
+│LED:blink 100ms       ■│  LED 状态和闪烁半周期；右下角方块跟绿灯同步亮灭
 └────────────────────────┘
 ```
 
@@ -121,6 +121,7 @@ OLED 字库只有英文，发中文会显示成 `?`。
 | 串口打印 `no I2C device found` | 检查 SDA/SCL 是否接反、VCC 是否接 3V3 |
 | 扫描到的地址是 `0x3D` | 把 `src/main.cpp` 里 `OLED_I2C_ADDR` 改成 `0x3D` |
 | 屏亮了但画面错位 / 右侧有花点 | 可能是 SH1106 屏，见下方“换屏” |
+| 屏幕偶尔花屏或不刷新 | 杜邦线太长时 400 kHz 的 I2C 可能不稳，把 `src/main.cpp` 里 `u8g2.setBusClock(400000);` 这一行删掉（回到 100 kHz） |
 | 发了文字没回复 | 串口助手要勾选“发送新行”/“加回车换行” |
 
 ## 换屏 / 换板子

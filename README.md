@@ -8,3 +8,4 @@
 | 项目 | 内容 |
 | --- | --- |
 | [01-uart-oled](01-uart-oled/) | 串口通信测试 + OLED 显示 |
+| [02-hal-button-u8g2](02-hal-button-u8g2/) | HAL 库工程 + 按键状态机（单击/双击/长按）+ 移植 U8g2 |
